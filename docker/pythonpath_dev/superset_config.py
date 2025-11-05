@@ -45,6 +45,17 @@ SECRET_KEY = _secret_key
 # Superset will use this if set, bypassing all other config
 SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
 
+# Validate that SQLALCHEMY_DATABASE_URI is complete (not just "postgresql://")
+# If it's incomplete, build from individual variables instead
+if SQLALCHEMY_DATABASE_URI and "@" in SQLALCHEMY_DATABASE_URI and "/" in SQLALCHEMY_DATABASE_URI.split("@")[1]:
+    # Valid complete connection string
+    logger.info(f"Using SQLALCHEMY_DATABASE_URI from environment: {SQLALCHEMY_DATABASE_URI[:30]}...")
+else:
+    # Not set or incomplete, build from components
+    if SQLALCHEMY_DATABASE_URI:
+        logger.warning(f"SQLALCHEMY_DATABASE_URI is incomplete: '{SQLALCHEMY_DATABASE_URI}', building from components instead")
+    SQLALCHEMY_DATABASE_URI = None
+
 if not SQLALCHEMY_DATABASE_URI:
     # Railway auto-injects PostgreSQL variables with PG* prefix
     # Also check for DATABASE_* and direct DATABASE_URL
@@ -76,8 +87,6 @@ if not SQLALCHEMY_DATABASE_URI:
             # Fallback to SQLite if no database configured (shouldn't happen in Railway)
             SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(SUPERSET_HOME, "superset.db")
             logger.warning(f"FALLING BACK TO SQLITE! Missing: USER={not DATABASE_USER}, PASS={not DATABASE_PASSWORD}, HOST={not DATABASE_HOST}, DB={not DATABASE_DB}")
-else:
-    logger.info(f"Using SQLALCHEMY_DATABASE_URI from environment: {SQLALCHEMY_DATABASE_URI[:30]}...")
 
 EXAMPLES_USER = os.getenv("EXAMPLES_USER")
 EXAMPLES_PASSWORD = os.getenv("EXAMPLES_PASSWORD")

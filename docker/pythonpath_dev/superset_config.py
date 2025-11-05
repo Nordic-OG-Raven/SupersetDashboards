@@ -25,6 +25,25 @@ import os
 import secrets
 import sys
 
+# CRITICAL: Force database URI IMMEDIATELY, before ANY Superset imports
+# This must be the absolute first thing after imports
+_db_uri = os.getenv("SQLALCHEMY_DATABASE_URI")
+if _db_uri and "@" in _db_uri and "/" in _db_uri.split("@")[1]:
+    # Force it at module level immediately
+    SQLALCHEMY_DATABASE_URI = _db_uri.replace("postgres://", "postgresql://", 1)
+    print(f"[CRITICAL] SQLALCHEMY_DATABASE_URI FORCED: {_db_uri[:50]}...", file=sys.stderr)
+else:
+    # Check DATABASE_URL as fallback
+    _db_url = os.getenv("DATABASE_URL")
+    if _db_url and "@" in _db_url:
+        SQLALCHEMY_DATABASE_URI = _db_url.replace("postgres://", "postgresql://", 1)
+        print(f"[CRITICAL] Using DATABASE_URL: {_db_url[:50]}...", file=sys.stderr)
+    else:
+        SQLALCHEMY_DATABASE_URI = None
+        print("[CRITICAL] WARNING: No database URI found! SQLALCHEMY_DATABASE_URI and DATABASE_URL both empty!", file=sys.stderr)
+        print(f"[DEBUG] SQLALCHEMY_DATABASE_URI env var: {os.getenv('SQLALCHEMY_DATABASE_URI')}", file=sys.stderr)
+        print(f"[DEBUG] DATABASE_URL env var: {os.getenv('DATABASE_URL')}", file=sys.stderr)
+
 from celery.schedules import crontab
 from flask_caching.backends.filesystemcache import FileSystemCache
 
@@ -40,10 +59,6 @@ if not _secret_key or _secret_key in ("CHANGE_ME_SECRET_KEY_PLEASE", "THISISINSE
     _secret_key = secrets.token_urlsafe(42)
 # Set SECRET_KEY at module level - this happens BEFORE Superset's default config loads
 SECRET_KEY = _secret_key
-
-# CRITICAL: Check SQLALCHEMY_DATABASE_URI first (highest priority)
-# Superset will use this if set, bypassing all other config
-SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
 
 # Validate that SQLALCHEMY_DATABASE_URI is complete (not just "postgresql://")
 # If it's incomplete, build from individual variables instead

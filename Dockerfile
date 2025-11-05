@@ -209,7 +209,8 @@ RUN if [ "$LOAD_EXAMPLES_DUCKDB" = "true" ]; then \
 
 # Copy compiled things from previous stages
 COPY --from=superset-node /app/superset/static/assets superset/static/assets
-
+# Copy config file to pythonpath so it's loaded
+COPY docker/pythonpath_dev/superset_config.py /app/pythonpath/superset_config.py
 # TODO, when the next version comes out, use --exclude superset/translations
 COPY superset superset
 # TODO in the meantime, remove the .po files

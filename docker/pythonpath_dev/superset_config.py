@@ -30,6 +30,14 @@ from flask_caching.backends.filesystemcache import FileSystemCache
 
 logger = logging.getLogger()
 
+# SECRET_KEY MUST be set at the very top, before any other imports that might trigger Superset init
+# Railway injects SUPERSET_SECRET_KEY or SECRET_KEY at runtime
+_secret_key = os.getenv("SUPERSET_SECRET_KEY") or os.getenv("SECRET_KEY")
+if not _secret_key or _secret_key in ("CHANGE_ME_SECRET_KEY_PLEASE", "THISISINSECURE", "CHANGE_ME"):
+    _secret_key = secrets.token_urlsafe(42)
+# Set SECRET_KEY at module level - this happens BEFORE Superset's default config loads
+SECRET_KEY = _secret_key
+
 DATABASE_DIALECT = os.getenv("DATABASE_DIALECT")
 DATABASE_USER = os.getenv("DATABASE_USER")
 DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
@@ -106,14 +114,8 @@ class CeleryConfig:
 
 CELERY_CONFIG = CeleryConfig
 
-# SECRET_KEY must be set via environment variable for production
-# Railway will inject SECRET_KEY from environment variables
-# Superset checks SECRET_KEY early, so read from env at module level
-# Try both SUPERSET_SECRET_KEY and SECRET_KEY env var names
-_secret_key = os.getenv("SUPERSET_SECRET_KEY") or os.getenv("SECRET_KEY")
-if not _secret_key or _secret_key == "CHANGE_ME_SECRET_KEY_PLEASE":
-    _secret_key = secrets.token_urlsafe(42)
-SECRET_KEY = _secret_key
+# SECRET_KEY is already set at the top of this file (before any other config)
+# This ensures it's available before Superset's validation check
 
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,

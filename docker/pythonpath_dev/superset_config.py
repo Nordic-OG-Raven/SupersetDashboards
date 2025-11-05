@@ -105,6 +105,10 @@ class CeleryConfig:
 
 CELERY_CONFIG = CeleryConfig
 
+# SECRET_KEY must be set via environment variable for production
+# Railway will inject SECRET_KEY from environment variables
+SECRET_KEY = os.getenv("SECRET_KEY", "CHANGE_ME_SECRET_KEY_PLEASE")
+
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,
     "EMBEDDED_SUPERSET": True

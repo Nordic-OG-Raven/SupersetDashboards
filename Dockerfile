@@ -242,10 +242,14 @@ RUN \
     uv pip install -e .
 # Install PostgreSQL support (required for production deployments)
 # Must install as root before switching to superset user
+# Cache bust: force rebuild
+ARG CACHE_BUST=1
 RUN \
+    echo "Installing psycopg2-binary (cache bust: $CACHE_BUST)" && \
     . /app/.venv/bin/activate && \
-    uv pip install psycopg2-binary==2.9.6 && \
-    python -c "import psycopg2; print('psycopg2 installed successfully')" || echo "psycopg2 install failed"
+    uv pip install --no-cache-dir psycopg2-binary==2.9.6 && \
+    python -c "import psycopg2; print('✅ psycopg2 installed successfully')" && \
+    python -c "import psycopg2; print(f'psycopg2 version: {psycopg2.__version__}')"
 RUN python -m compileall /app/superset
 
 USER superset

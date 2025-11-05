@@ -58,15 +58,10 @@ WORKDIR /app/superset-frontend
 RUN mkdir -p /app/superset/static/assets \
              /app/superset/translations
 
-# Mount package files and install dependencies if not in dev mode
-# NOTE: we mount packages and plugins as they are referenced in package.json as workspaces
-# ideally we'd COPY only their package.json. Here npm ci will be cached as long
-# as the full content of these folders don't change, yielding a decent cache reuse rate.
-# Note that it's not possible to selectively COPY or mount using blobs.
-RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
-    --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
-    \
-    \
+# Copy package files and install dependencies if not in dev mode
+# NOTE: Railway doesn't support bind mounts, so we COPY instead
+COPY superset-frontend/package.json superset-frontend/package-lock.json ./
+RUN \
     if [ "${DEV_MODE}" = "false" ]; then \
         npm ci; \
     else \

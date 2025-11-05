@@ -1,0 +1,9 @@
+.git
+node_modules
+superset-frontend/node_modules
+*.pyc
+__pycache__
+.env-local
+docker-compose*.yml
+railway-deploy.sh
+RAILWAY_DEPLOY.md

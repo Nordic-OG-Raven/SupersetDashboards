@@ -105,7 +105,28 @@ class CeleryConfig:
 
 CELERY_CONFIG = CeleryConfig
 
-FEATURE_FLAGS = {"ALERT_REPORTS": True}
+FEATURE_FLAGS = {
+    "ALERT_REPORTS": True,
+    "EMBEDDED_SUPERSET": True
+}
+
+# Disable CSRF for guest token API (required for embedding)
+WTF_CSRF_ENABLED = False
+
+# Allow iframe embedding (disable X-Frame-Options)
+# Superset sets X-Frame-Options in initialization, override it
+OVERRIDE_HTTP_HEADERS = {
+    'X-Frame-Options': 'ALLOWALL'  # This will be ignored/invalid, effectively removing it
+}
+
+# Enable CORS for embedded dashboards
+ENABLE_CORS = True
+CORS_OPTIONS = {
+    'supports_credentials': True,
+    'allow_headers': ['*'],
+    'resources': {'*': {'origins': ['*']}},
+    'origins': ['http://localhost:3000', 'http://localhost:3001', 'https://*.vercel.app', 'https://jonashaahr.com']
+}
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = True
 WEBDRIVER_BASEURL = f"http://superset_app{os.environ.get('SUPERSET_APP_ROOT', '/')}/"  # When using docker compose baseurl should be http://superset_nginx{ENV{BASEPATH}}/  # noqa: E501
 # The base URL for the email report hyperlinks.
@@ -142,3 +163,12 @@ try:
     )
 except ImportError:
     logger.info("Using default Docker config...")
+
+# Hook into Flask app to remove X-Frame-Options after initialization
+# This runs after the app is created
+def configure_embedding(app):
+    @app.after_request
+    def remove_xframe_options(response):
+        response.headers.pop('X-Frame-Options', None)
+        return response
+    return app

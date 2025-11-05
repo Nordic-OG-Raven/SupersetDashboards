@@ -30,6 +30,9 @@ from flask_caching.backends.filesystemcache import FileSystemCache
 
 logger = logging.getLogger()
 
+# SUPERSET_HOME needed for SQLite fallback
+SUPERSET_HOME = os.getenv("SUPERSET_HOME", "/app/superset_home")
+
 # SECRET_KEY MUST be set at the very top, before any other imports that might trigger Superset init
 # Railway injects SUPERSET_SECRET_KEY or SECRET_KEY at runtime
 _secret_key = os.getenv("SUPERSET_SECRET_KEY") or os.getenv("SECRET_KEY")
@@ -38,25 +41,36 @@ if not _secret_key or _secret_key in ("CHANGE_ME_SECRET_KEY_PLEASE", "THISISINSE
 # Set SECRET_KEY at module level - this happens BEFORE Superset's default config loads
 SECRET_KEY = _secret_key
 
-DATABASE_DIALECT = os.getenv("DATABASE_DIALECT")
-DATABASE_USER = os.getenv("DATABASE_USER")
-DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
-DATABASE_HOST = os.getenv("DATABASE_HOST")
-DATABASE_PORT = os.getenv("DATABASE_PORT")
-DATABASE_DB = os.getenv("DATABASE_DB")
+# Railway auto-injects PostgreSQL variables with PG* prefix
+# Also check for DATABASE_* and direct DATABASE_URL
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    # Use DATABASE_URL if provided (Railway sometimes uses this)
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+else:
+    # Build from components - Railway uses PG* variables
+    DATABASE_DIALECT = os.getenv("DATABASE_DIALECT") or "postgresql"
+    DATABASE_USER = os.getenv("DATABASE_USER") or os.getenv("PGUSER")
+    DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD") or os.getenv("PGPASSWORD")
+    DATABASE_HOST = os.getenv("DATABASE_HOST") or os.getenv("PGHOST")
+    DATABASE_PORT = os.getenv("DATABASE_PORT") or os.getenv("PGPORT", "5432")
+    DATABASE_DB = os.getenv("DATABASE_DB") or os.getenv("PGDATABASE")
+    
+    if DATABASE_USER and DATABASE_PASSWORD and DATABASE_HOST and DATABASE_DB:
+        SQLALCHEMY_DATABASE_URI = (
+            f"{DATABASE_DIALECT}://"
+            f"{DATABASE_USER}:{DATABASE_PASSWORD}@"
+            f"{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_DB}"
+        )
+    else:
+        # Fallback to SQLite if no database configured (shouldn't happen in Railway)
+        SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(SUPERSET_HOME, "superset.db")
 
 EXAMPLES_USER = os.getenv("EXAMPLES_USER")
 EXAMPLES_PASSWORD = os.getenv("EXAMPLES_PASSWORD")
 EXAMPLES_HOST = os.getenv("EXAMPLES_HOST")
 EXAMPLES_PORT = os.getenv("EXAMPLES_PORT")
 EXAMPLES_DB = os.getenv("EXAMPLES_DB")
-
-# The SQLAlchemy connection string.
-SQLALCHEMY_DATABASE_URI = (
-    f"{DATABASE_DIALECT}://"
-    f"{DATABASE_USER}:{DATABASE_PASSWORD}@"
-    f"{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_DB}"
-)
 
 # Use environment variable if set, otherwise construct from components
 # This MUST take precedence over any other configuration

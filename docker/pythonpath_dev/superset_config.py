@@ -108,8 +108,12 @@ CELERY_CONFIG = CeleryConfig
 
 # SECRET_KEY must be set via environment variable for production
 # Railway will inject SECRET_KEY from environment variables
-# Use a strong default if not set (but Railway MUST set this)
-SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(42)
+# Superset checks SECRET_KEY early, so read from env at module level
+# Try both SUPERSET_SECRET_KEY and SECRET_KEY env var names
+_secret_key = os.getenv("SUPERSET_SECRET_KEY") or os.getenv("SECRET_KEY")
+if not _secret_key or _secret_key == "CHANGE_ME_SECRET_KEY_PLEASE":
+    _secret_key = secrets.token_urlsafe(42)
+SECRET_KEY = _secret_key
 
 FEATURE_FLAGS = {
     "ALERT_REPORTS": True,

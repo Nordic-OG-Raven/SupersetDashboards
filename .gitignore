@@ -135,3 +135,6 @@ PROJECT.md
 .claude_rc*
 .env.local
 railway-env-vars.txt
+*supabase*.sh
+set_supabase_connection.sh
+setup_supabase_render.sh

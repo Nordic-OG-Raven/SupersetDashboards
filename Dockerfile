@@ -65,8 +65,8 @@ RUN mkdir -p /app/superset/static/assets \
 # Note that it's not possible to selectively COPY or mount using blobs.
 RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
-    --mount=type=cache,id=railway-cache,target=/root/.cache \
-    --mount=type=cache,id=railway-cache,target=/root/.npm \
+    --mount=type=cache,target=/root/.cache \
+    --mount=type=cache,target=/root/.npm \
     if [ "${DEV_MODE}" = "false" ]; then \
         npm ci; \
     else \
@@ -82,7 +82,7 @@ COPY superset-frontend /app/superset-frontend
 FROM superset-node-ci AS superset-node
 
 # Build the frontend if not in dev mode
-RUN --mount=type=cache,id=railway-cache,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm \
     if [ "${DEV_MODE}" = "false" ]; then \
         echo "Running 'npm run ${BUILD_CMD}'"; \
         npm run ${BUILD_CMD}; \
@@ -239,10 +239,10 @@ COPY requirements/base.txt requirements/
 # Copy superset-core package needed for editable install in base.txt
 COPY superset-core superset-core
 
-RUN --mount=type=cache,id=railway-cache,target=${SUPERSET_HOME}/.cache/uv \
+RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
     /app/docker/pip-install.sh --requires-build-essential -r requirements/base.txt
 # Install the superset package
-RUN --mount=type=cache,id=railway-cache,target=${SUPERSET_HOME}/.cache/uv \
+RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
     uv pip install -e .
 RUN python -m compileall /app/superset
 
@@ -267,10 +267,10 @@ COPY superset-core superset-core
 COPY superset-extensions-cli superset-extensions-cli
 
 # Install Python dependencies using docker/pip-install.sh
-RUN --mount=type=cache,id=railway-cache,target=${SUPERSET_HOME}/.cache/uv \
+RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
     /app/docker/pip-install.sh --requires-build-essential -r requirements/development.txt
 # Install the superset package
-RUN --mount=type=cache,id=railway-cache,target=${SUPERSET_HOME}/.cache/uv \
+RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
     uv pip install -e .
 
 RUN uv pip install .[postgres]

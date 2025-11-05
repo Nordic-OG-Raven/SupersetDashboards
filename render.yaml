@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: superset
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter  # Starter plan for PostgreSQL compatibility
+    buildCommand: ""
+    startCommand: /app/docker/docker-bootstrap.sh app-gunicorn
+    envVars:
+      - key: SUPERSET_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: superset-db
+          property: connectionString
+      - key: SQLALCHEMY_DATABASE_URI
+        fromDatabase:
+          name: superset-db
+          property: connectionString
+      - key: WTF_CSRF_ENABLED
+        value: "false"
+      - key: FEATURE_FLAGS
+        value: '{"EMBEDDED_SUPERSET": true}'
+      - key: ENABLE_CORS
+        value: "true"
+      - key: SUPERSET_ENV
+        value: production
+
+databases:
+  - name: superset-db
+    databaseName: superset
+    user: superset
+    plan: starter
+

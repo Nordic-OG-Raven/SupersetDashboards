@@ -5,8 +5,6 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: starter  # Starter plan for PostgreSQL compatibility
-    buildCommand: ""
-    startCommand: /app/docker/docker-bootstrap.sh app-gunicorn
     envVars:
       - key: SUPERSET_SECRET_KEY
         generateValue: true

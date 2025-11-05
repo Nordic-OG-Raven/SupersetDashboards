@@ -243,6 +243,9 @@ RUN python -m compileall /app/superset
 
 USER superset
 
+# Production CMD for Render (uses docker-bootstrap.sh)
+CMD ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
+
 ######################################################################
 # Dev image...
 ######################################################################

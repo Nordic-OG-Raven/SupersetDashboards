@@ -242,7 +242,7 @@ RUN \
     uv pip install -e .
 # Install PostgreSQL support (required for production deployments)
 RUN \
-    uv pip install .[postgres]
+    uv pip install psycopg2-binary==2.9.6
 RUN python -m compileall /app/superset
 
 USER superset

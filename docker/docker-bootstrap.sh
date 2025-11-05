@@ -84,6 +84,9 @@ case "${1}" in
     ;;
   app-gunicorn)
     echo "Starting web app..."
+    # Run database migrations before starting server
+    echo "Running database migrations..."
+    superset db upgrade || echo "Migration failed, continuing anyway..."
     /usr/bin/run-server.sh
     ;;
   *)

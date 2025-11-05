@@ -4,18 +4,12 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    plan: starter  # Starter plan for PostgreSQL compatibility
+    # Using free tier - no plan specified
     envVars:
       - key: SUPERSET_SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: superset-db
-          property: connectionString
-      - key: SQLALCHEMY_DATABASE_URI
-        fromDatabase:
-          name: superset-db
-          property: connectionString
+      # DATABASE_URL and SQLALCHEMY_DATABASE_URI will be set manually
+      # Use Supabase/Neon free PostgreSQL (see instructions below)
       - key: WTF_CSRF_ENABLED
         value: "false"
       - key: FEATURE_FLAGS
@@ -24,10 +18,4 @@ services:
         value: "true"
       - key: SUPERSET_ENV
         value: production
-
-databases:
-  - name: superset-db
-    databaseName: superset
-    user: superset
-    plan: starter
 

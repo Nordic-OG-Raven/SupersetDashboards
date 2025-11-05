@@ -1,0 +1,19 @@
+# Simplified Dockerfile for Railway deployment
+# Uses pre-built Superset image instead of building from source
+
+FROM apachesuperset.docker.scarf.sh/apache/superset:latest
+
+USER root
+
+# Copy custom config
+COPY docker/pythonpath_dev/superset_config.py /app/superset_config.py
+
+# Set environment
+ENV SUPERSET_CONFIG_PATH=/app/superset_config.py \
+    PYTHONPATH=/app/pythonpath:/app
+
+# Initialize Superset (will be done via docker-init.sh)
+USER superset
+
+WORKDIR /app
+

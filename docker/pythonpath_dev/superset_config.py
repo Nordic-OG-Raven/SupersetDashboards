@@ -41,36 +41,43 @@ if not _secret_key or _secret_key in ("CHANGE_ME_SECRET_KEY_PLEASE", "THISISINSE
 # Set SECRET_KEY at module level - this happens BEFORE Superset's default config loads
 SECRET_KEY = _secret_key
 
-# Railway auto-injects PostgreSQL variables with PG* prefix
-# Also check for DATABASE_* and direct DATABASE_URL
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    # Use DATABASE_URL if provided (Railway sometimes uses this)
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    logger.info(f"Using DATABASE_URL for database connection")
-else:
-    # Build from components - Railway uses PG* variables OR DATABASE_* variables
-    DATABASE_DIALECT = os.getenv("DATABASE_DIALECT") or "postgresql"
-    DATABASE_USER = os.getenv("DATABASE_USER") or os.getenv("PGUSER")
-    DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD") or os.getenv("PGPASSWORD")
-    DATABASE_HOST = os.getenv("DATABASE_HOST") or os.getenv("PGHOST")
-    DATABASE_PORT = os.getenv("DATABASE_PORT") or os.getenv("PGPORT", "5432")
-    DATABASE_DB = os.getenv("DATABASE_DB") or os.getenv("PGDATABASE")
-    
-    # Debug logging
-    logger.info(f"Database config: USER={DATABASE_USER[:3] if DATABASE_USER else None}..., HOST={DATABASE_HOST}, DB={DATABASE_DB}, PORT={DATABASE_PORT}")
-    
-    if DATABASE_USER and DATABASE_PASSWORD and DATABASE_HOST and DATABASE_DB:
-        SQLALCHEMY_DATABASE_URI = (
-            f"{DATABASE_DIALECT}://"
-            f"{DATABASE_USER}:{DATABASE_PASSWORD}@"
-            f"{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_DB}"
-        )
-        logger.info(f"Using PostgreSQL: {DATABASE_DIALECT}://{DATABASE_USER}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_DB}")
+# CRITICAL: Check SQLALCHEMY_DATABASE_URI first (highest priority)
+# Superset will use this if set, bypassing all other config
+SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
+
+if not SQLALCHEMY_DATABASE_URI:
+    # Railway auto-injects PostgreSQL variables with PG* prefix
+    # Also check for DATABASE_* and direct DATABASE_URL
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if DATABASE_URL:
+        # Use DATABASE_URL if provided (Railway sometimes uses this)
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        logger.info(f"Using DATABASE_URL for database connection")
     else:
-        # Fallback to SQLite if no database configured (shouldn't happen in Railway)
-        SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(SUPERSET_HOME, "superset.db")
-        logger.warning(f"FALLING BACK TO SQLITE! Missing: USER={not DATABASE_USER}, PASS={not DATABASE_PASSWORD}, HOST={not DATABASE_HOST}, DB={not DATABASE_DB}")
+        # Build from components - Railway uses PG* variables OR DATABASE_* variables
+        DATABASE_DIALECT = os.getenv("DATABASE_DIALECT") or "postgresql"
+        DATABASE_USER = os.getenv("DATABASE_USER") or os.getenv("PGUSER")
+        DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD") or os.getenv("PGPASSWORD")
+        DATABASE_HOST = os.getenv("DATABASE_HOST") or os.getenv("PGHOST")
+        DATABASE_PORT = os.getenv("DATABASE_PORT") or os.getenv("PGPORT", "5432")
+        DATABASE_DB = os.getenv("DATABASE_DB") or os.getenv("PGDATABASE")
+        
+        # Debug logging
+        logger.info(f"Database config: USER={DATABASE_USER[:3] if DATABASE_USER else None}..., HOST={DATABASE_HOST}, DB={DATABASE_DB}, PORT={DATABASE_PORT}")
+        
+        if DATABASE_USER and DATABASE_PASSWORD and DATABASE_HOST and DATABASE_DB:
+            SQLALCHEMY_DATABASE_URI = (
+                f"{DATABASE_DIALECT}://"
+                f"{DATABASE_USER}:{DATABASE_PASSWORD}@"
+                f"{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_DB}"
+            )
+            logger.info(f"Using PostgreSQL: {DATABASE_DIALECT}://{DATABASE_USER}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_DB}")
+        else:
+            # Fallback to SQLite if no database configured (shouldn't happen in Railway)
+            SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(SUPERSET_HOME, "superset.db")
+            logger.warning(f"FALLING BACK TO SQLITE! Missing: USER={not DATABASE_USER}, PASS={not DATABASE_PASSWORD}, HOST={not DATABASE_HOST}, DB={not DATABASE_DB}")
+else:
+    logger.info(f"Using SQLALCHEMY_DATABASE_URI from environment: {SQLALCHEMY_DATABASE_URI[:30]}...")
 
 EXAMPLES_USER = os.getenv("EXAMPLES_USER")
 EXAMPLES_PASSWORD = os.getenv("EXAMPLES_PASSWORD")

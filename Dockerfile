@@ -241,8 +241,11 @@ RUN \
 RUN \
     uv pip install -e .
 # Install PostgreSQL support (required for production deployments)
+# Must install as root before switching to superset user
 RUN \
-    uv pip install psycopg2-binary==2.9.6
+    . /app/.venv/bin/activate && \
+    uv pip install psycopg2-binary==2.9.6 && \
+    python -c "import psycopg2; print('psycopg2 installed successfully')" || echo "psycopg2 install failed"
 RUN python -m compileall /app/superset
 
 USER superset

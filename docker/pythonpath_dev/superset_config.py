@@ -220,3 +220,20 @@ def configure_embedding(app):
         response.headers.pop('X-Frame-Options', None)
         return response
     return app
+
+# CRITICAL: Force SQLALCHEMY_DATABASE_URI at the VERY END to override any defaults
+# This must be the last thing set in this file
+_force_db_uri = os.getenv("SQLALCHEMY_DATABASE_URI")
+if _force_db_uri and "@" in _force_db_uri and "/" in _force_db_uri.split("@")[1]:
+    SQLALCHEMY_DATABASE_URI = _force_db_uri
+    print(f"[FORCE] SQLALCHEMY_DATABASE_URI set to: {_force_db_uri[:50]}...", file=sys.stderr)
+elif not _force_db_uri:
+    # Build from components as fallback
+    _db_user = os.getenv("DATABASE_USER") or os.getenv("PGUSER")
+    _db_pass = os.getenv("DATABASE_PASSWORD") or os.getenv("PGPASSWORD")
+    _db_host = os.getenv("DATABASE_HOST") or os.getenv("PGHOST")
+    _db_port = os.getenv("DATABASE_PORT") or os.getenv("PGPORT", "5432")
+    _db_name = os.getenv("DATABASE_DB") or os.getenv("PGDATABASE")
+    if _db_user and _db_pass and _db_host and _db_name:
+        SQLALCHEMY_DATABASE_URI = f"postgresql://{_db_user}:{_db_pass}@{_db_host}:{_db_port}/{_db_name}"
+        print(f"[FORCE] SQLALCHEMY_DATABASE_URI built from components: postgresql://{_db_user}@{_db_host}:{_db_port}/{_db_name}", file=sys.stderr)

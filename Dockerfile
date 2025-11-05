@@ -240,6 +240,9 @@ RUN \
 # Install the superset package
 RUN \
     uv pip install -e .
+# Install PostgreSQL support (required for production deployments)
+RUN \
+    uv pip install .[postgres]
 RUN python -m compileall /app/superset
 
 USER superset
